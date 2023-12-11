@@ -12,6 +12,8 @@ class Player():
         self.busted=False
         self.blackjack=False
         self.stay=False
+        self.double='No'
+        self.split='No'
 
 class Dealer(Player):
     
@@ -60,7 +62,7 @@ class BlackJack():
                     api_pull=requests.get(f'https://www.deckofcardsapi.com/api/deck/new/shuffle/?deck_count={self.deck_number}')
                     api_pull_converted=api_pull.json()
                     self.deck_id=api_pull_converted['deck_id']
-                    deck_remaining=api_pull_converted['remaining']
+                    self.deck_remaining=api_pull_converted['remaining']
                     print('Deck ready! Let\'s play!\n')
                     break                    
             elif initialize == 'No' or initialize == 'no':
@@ -100,6 +102,8 @@ class BlackJack():
         target.blackjack=False
         target.stay=False
         target.hand_score=0
+        target.split='No'
+        target.double='No'
 
     def deal(self, dealt_player_num):
         # this method has been separated from hit to decrease the api pulls, setting up the first hand with only one and hopefully 
@@ -117,7 +121,9 @@ class BlackJack():
             self.player_list[player].hand.append(current_deal['cards'][deal_value])
             self.player_list[player].hand.append(current_deal['cards'][(deal_value+dealt_player_num)])
             game.count(self.player_list[player])
-            deal_value+=1   
+            deal_value+=1
+            if self.player_list[player].hand[0]== self.player_list[player].hand[0]:
+                self.player_list[player].split='Possible'
         self.current_player='Dealer'
         game.reset(self.dealer)
         self.dealer.hand.append(current_deal['cards'][deal_value])
@@ -258,15 +264,47 @@ class BlackJack():
                     print(f"{player}'s hand is a push from tie with dealer. Return ${self.player_list[player].bet}")
                     game.payout(self.player_list[player],1,self.player_list[player].bet)
 
+    # def splitter(self):
+    #     pass
+
+    def double(self,target):
+        print(f'{self.current_player}\'s Turn...\n')
+        self.count(target)
+        ask=input('Would you like to double down? Y/N\t')
+        if ask=='Y' or ask=='y':
+            target.chips-=target.bet
+            target.bet*=2
+            print(f'Bet increased to ${target.bet} and drawing one card')
+            api_pull=requests.get(f'https://www.deckofcardsapi.com/api/deck/{self.deck_id}/draw/?count=1')
+            api_pull_converted=api_pull.json()
+            current_hit=api_pull_converted
+            target.hand.append(current_hit['cards'][0])
+            self.count(target)
+            self.deck_remaining-=1
+        elif ask=='N' or ask=='n':
+            game.hitter(target)
+        else:
+            print('Whoops, wrong entry. Try again.\n')
+
     def playBlackjack(self):
         # this method controls the flow of the game
+        # split function in the works
         game.setup()
         while self.play:
             game.take_bets()
             game.deal(self.player_count)
             for player in self.player_list.keys():
                 self.current_player=player
-                game.hitter(self.player_list[player])
+                # if self.player_list[player].split=='Possible' and self.player_list[player].bet <= self.player_list[player].chips:
+                #     ask=input('Would you like to split? Y/N\t')
+                #     if ask=='Y' or ask=='y':
+                #         self.player_list[player].split='Yes'
+                # if self.player_list[player].split=='Yes':
+                #     game.splitter(self.player_list[player])
+                if self.player_list[player].hand_score<=11 and self.player_list[player].bet <= self.player_list[player].chips:
+                    game.double(self.player_list[player])
+                else:
+                    game.hitter(self.player_list[player])
             self.current_player='Dealer'
             game.endTurn()
             game.winners()
