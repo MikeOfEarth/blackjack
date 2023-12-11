@@ -61,6 +61,7 @@ class BlackJack():
                     api_pull=requests.get(f'https://www.deckofcardsapi.com/api/deck/new/shuffle/?deck_count={self.deck_number}')
                     api_pull_converted=api_pull.json()
                     self.deck_id=api_pull_converted['deck_id']
+                    deck_remaining=api_pull_converted['remaining']
                     print('Deck ready! Let\'s play!\n')
                     break                    
             elif initialize == 'No' or initialize == 'no':
@@ -106,6 +107,7 @@ class BlackJack():
         self.high_hand=0
         deal_value=0
         initial_deal=2+(dealt_player_num*2)
+        self.deck_remaining-=initial_deal
         api_pull=requests.get(f'https://www.deckofcardsapi.com/api/deck/{self.deck_id}/draw/?count={initial_deal}')
         api_pull_converted=api_pull.json()
         current_deal=api_pull_converted
@@ -177,6 +179,7 @@ class BlackJack():
                 current_hit=api_pull_converted
                 target.hand.append(current_hit['cards'][0])
                 self.count(target)
+                self.deck_remaining-=1
             elif hit_ask=='N' or hit_ask=='n':
                 target.stay=True
             else:
@@ -203,6 +206,7 @@ class BlackJack():
                     api_pull_converted=api_pull.json()
                     current_hit=api_pull_converted
                     self.dealer.hand.append(current_hit['cards'][0])
+                    self.deck_remaining-=1
                     game.count(self.dealer)
                 else:
                     self.dealer.stay=True
@@ -270,6 +274,14 @@ class BlackJack():
             if play=='Y' or play=='y':
                 self.play=True
                 print("")
+                if self.deck_remaining<=15:
+                    # reshuffle mechanic (create new deck...count figure out the api discard pile)
+                    print('Cards low, reshuffling...')
+                    api_pull=requests.get(f'https://www.deckofcardsapi.com/api/deck/new/shuffle/?deck_count={self.deck_number}')
+                    api_pull_converted=api_pull.json()
+                    self.deck_id=api_pull_converted['deck_id']
+                    self.deck_remaining=api_pull_converted['remaining']
+                    print('Deck ready! Let\'s play!\n')
             elif play=='N' or play=='n':
                 self.play=False
                 print('Thanks for playing.\n')
