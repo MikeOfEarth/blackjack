@@ -9,7 +9,6 @@ class Player():
         self.chips=0
         self.bet=0
         self.hand_score=0
-        self.bet=0
         self.busted=False
         self.blackjack=False
         self.stay=False
@@ -95,6 +94,7 @@ class BlackJack():
                     
 
     def reset(self,target):
+        # resets default settings for involved players
         target.hand=[]
         target.busted=False
         target.blackjack=False
@@ -102,7 +102,7 @@ class BlackJack():
         target.hand_score=0
 
     def deal(self, dealt_player_num):
-        # this function has been separated from hit to decrease the api pulls, setting up the first hand with only one and hopefully 
+        # this method has been separated from hit to decrease the api pulls, setting up the first hand with only one and hopefully 
         # speeding up programmed play. Otherwise I would use this function nested for both deal and hit actions with different end values.        
         self.high_hand=0
         deal_value=0
